@@ -94,7 +94,7 @@ function Home() {
               search={{ category: c.slug }}
               className="surface-card flex items-center gap-3 p-4 transition hover:shadow-lift"
             >
-              <CategoryIcon name={c.icon} className="size-5 text-primary" />
+              <CategoryIcon name={c.icon ?? ""} className="size-5 text-primary" />
               <span className="text-sm font-semibold">{c.name}</span>
             </Link>
           ))}

@@ -17,12 +17,12 @@ import {
 import { categoriesQuery, productsQuery } from "@/lib/catalog";
 import { AVAILABILITIES, CONDITIONS } from "@/lib/site-config";
 
-type Search = { category?: string; q?: string };
+type PartsSearch = { category: string; q: string };
 
 export const Route = createFileRoute("/parts/")({
-  validateSearch: (search: Record<string, unknown>): Search => ({
-    category: typeof search.category === "string" ? search.category : undefined,
-    q: typeof search.q === "string" ? search.q : undefined,
+  validateSearch: (search: Record<string, unknown>): PartsSearch => ({
+    category: typeof search["category"] === "string" ? (search["category"] as string) : "",
+    q: typeof search["q"] === "string" ? (search["q"] as string) : "",
   }),
   head: () => ({
     meta: [
