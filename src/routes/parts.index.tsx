@@ -49,7 +49,7 @@ function PartsPage() {
   const products = useQuery(productsQuery);
 
   const [q, setQ] = useState(params.q ?? "");
-  const [category, setCategory] = useState(params.category ?? ALL);
+  const [category, setCategory] = useState(params.category || ALL);
   const [make, setMake] = useState(ALL);
   const [condition, setCondition] = useState(ALL);
   const [availability, setAvailability] = useState(ALL);
