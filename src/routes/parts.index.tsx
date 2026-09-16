@@ -17,12 +17,14 @@ import {
 import { categoriesQuery, productsQuery } from "@/lib/catalog";
 import { AVAILABILITIES, CONDITIONS } from "@/lib/site-config";
 
-type PartsSearch = { category: string; q: string };
+type PartsSearch = { category?: string; q?: string };
 
 export const Route = createFileRoute("/parts/")({
   validateSearch: (search: Record<string, unknown>): PartsSearch => ({
-    category: typeof search["category"] === "string" ? (search["category"] as string) : "",
-    q: typeof search["q"] === "string" ? (search["q"] as string) : "",
+    ...(typeof search["category"] === "string" && search["category"]
+      ? { category: search["category"] as string }
+      : {}),
+    ...(typeof search["q"] === "string" && search["q"] ? { q: search["q"] as string } : {}),
   }),
   head: () => ({
     meta: [
@@ -47,7 +49,7 @@ function PartsPage() {
   const products = useQuery(productsQuery);
 
   const [q, setQ] = useState(params.q ?? "");
-  const [category, setCategory] = useState(params.category ?? ALL);
+  const [category, setCategory] = useState(params.category || ALL);
   const [make, setMake] = useState(ALL);
   const [condition, setCondition] = useState(ALL);
   const [availability, setAvailability] = useState(ALL);
