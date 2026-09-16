@@ -12,7 +12,8 @@ import {
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { QUOTATION_STATUSES, formatPrice, whatsappLink } from "@/lib/site-config";
-import { downloadQuotationPdf } from "@/lib/api/quotation-pdf";
+import { downloadBlob, generateQuotationPdf } from "@/lib/api/quotation-pdf";
+import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/_authenticated/admin/quotations")({
   component: QuotationsPage,

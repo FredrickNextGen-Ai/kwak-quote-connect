@@ -19,6 +19,7 @@ import { Route as PartsIndexRouteImport } from './routes/parts.index'
 import { Route as PartsIdRouteImport } from './routes/parts.$id'
 import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authenticated/admin.index'
 import { Route as AuthenticatedAdminCustomersRouteImport } from './routes/_authenticated/admin.customers'
+import { Route as AuthenticatedAdminQuotationsRouteImport } from './routes/_authenticated/admin.quotations'
 import { Route as AuthenticatedAdminSettingsRouteImport } from './routes/_authenticated/admin.settings'
 
 const IndexRoute = IndexRouteImport.update({
@@ -71,6 +72,12 @@ const AuthenticatedAdminCustomersRoute =
     path: '/customers',
     getParentRoute: () => AuthenticatedAdminRoute,
   } as any)
+const AuthenticatedAdminQuotationsRoute =
+  AuthenticatedAdminQuotationsRouteImport.update({
+    id: '/quotations',
+    path: '/quotations',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
 const AuthenticatedAdminSettingsRoute =
   AuthenticatedAdminSettingsRouteImport.update({
     id: '/settings',
@@ -87,6 +94,7 @@ export interface FileRoutesByFullPath {
   '/parts/$id': typeof PartsIdRoute
   '/parts/': typeof PartsIndexRoute
   '/admin/customers': typeof AuthenticatedAdminCustomersRoute
+  '/admin/quotations': typeof AuthenticatedAdminQuotationsRoute
   '/admin/settings': typeof AuthenticatedAdminSettingsRoute
   '/admin/': typeof AuthenticatedAdminIndexRoute
 }
@@ -98,6 +106,7 @@ export interface FileRoutesByTo {
   '/parts/$id': typeof PartsIdRoute
   '/parts': typeof PartsIndexRoute
   '/admin/customers': typeof AuthenticatedAdminCustomersRoute
+  '/admin/quotations': typeof AuthenticatedAdminQuotationsRoute
   '/admin/settings': typeof AuthenticatedAdminSettingsRoute
   '/admin': typeof AuthenticatedAdminIndexRoute
 }
@@ -112,6 +121,7 @@ export interface FileRoutesById {
   '/parts/$id': typeof PartsIdRoute
   '/parts/': typeof PartsIndexRoute
   '/_authenticated/admin/customers': typeof AuthenticatedAdminCustomersRoute
+  '/_authenticated/admin/quotations': typeof AuthenticatedAdminQuotationsRoute
   '/_authenticated/admin/settings': typeof AuthenticatedAdminSettingsRoute
   '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
 }
@@ -126,6 +136,7 @@ export interface FileRouteTypes {
     | '/parts/$id'
     | '/parts/'
     | '/admin/customers'
+    | '/admin/quotations'
     | '/admin/settings'
     | '/admin/'
   fileRoutesByTo: FileRoutesByTo
@@ -137,6 +148,7 @@ export interface FileRouteTypes {
     | '/parts/$id'
     | '/parts'
     | '/admin/customers'
+    | '/admin/quotations'
     | '/admin/settings'
     | '/admin'
   id:
@@ -150,6 +162,7 @@ export interface FileRouteTypes {
     | '/parts/$id'
     | '/parts/'
     | '/_authenticated/admin/customers'
+    | '/_authenticated/admin/quotations'
     | '/_authenticated/admin/settings'
     | '/_authenticated/admin/'
   fileRoutesById: FileRoutesById
@@ -236,6 +249,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminCustomersRouteImport
       parentRoute: typeof AuthenticatedAdminRoute
     }
+    '/_authenticated/admin/quotations': {
+      id: '/_authenticated/admin/quotations'
+      path: '/quotations'
+      fullPath: '/admin/quotations'
+      preLoaderRoute: typeof AuthenticatedAdminQuotationsRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
     '/_authenticated/admin/settings': {
       id: '/_authenticated/admin/settings'
       path: '/settings'
@@ -248,12 +268,14 @@ declare module '@tanstack/react-router' {
 
 interface AuthenticatedAdminRouteChildren {
   AuthenticatedAdminCustomersRoute: typeof AuthenticatedAdminCustomersRoute
+  AuthenticatedAdminQuotationsRoute: typeof AuthenticatedAdminQuotationsRoute
   AuthenticatedAdminSettingsRoute: typeof AuthenticatedAdminSettingsRoute
   AuthenticatedAdminIndexRoute: typeof AuthenticatedAdminIndexRoute
 }
 
 const AuthenticatedAdminRouteChildren: AuthenticatedAdminRouteChildren = {
   AuthenticatedAdminCustomersRoute: AuthenticatedAdminCustomersRoute,
+  AuthenticatedAdminQuotationsRoute: AuthenticatedAdminQuotationsRoute,
   AuthenticatedAdminSettingsRoute: AuthenticatedAdminSettingsRoute,
   AuthenticatedAdminIndexRoute: AuthenticatedAdminIndexRoute,
 }
