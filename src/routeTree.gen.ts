@@ -19,6 +19,7 @@ import { Route as PartsIndexRouteImport } from './routes/parts.index'
 import { Route as PartsIdRouteImport } from './routes/parts.$id'
 import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authenticated/admin.index'
 import { Route as AuthenticatedAdminCustomersRouteImport } from './routes/_authenticated/admin.customers'
+import { Route as AuthenticatedAdminProductsRouteImport } from './routes/_authenticated/admin.products'
 import { Route as AuthenticatedAdminQuotationsRouteImport } from './routes/_authenticated/admin.quotations'
 import { Route as AuthenticatedAdminSettingsRouteImport } from './routes/_authenticated/admin.settings'
 
@@ -72,6 +73,12 @@ const AuthenticatedAdminCustomersRoute =
     path: '/customers',
     getParentRoute: () => AuthenticatedAdminRoute,
   } as any)
+const AuthenticatedAdminProductsRoute =
+  AuthenticatedAdminProductsRouteImport.update({
+    id: '/products',
+    path: '/products',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
 const AuthenticatedAdminQuotationsRoute =
   AuthenticatedAdminQuotationsRouteImport.update({
     id: '/quotations',
@@ -94,6 +101,7 @@ export interface FileRoutesByFullPath {
   '/parts/$id': typeof PartsIdRoute
   '/parts/': typeof PartsIndexRoute
   '/admin/customers': typeof AuthenticatedAdminCustomersRoute
+  '/admin/products': typeof AuthenticatedAdminProductsRoute
   '/admin/quotations': typeof AuthenticatedAdminQuotationsRoute
   '/admin/settings': typeof AuthenticatedAdminSettingsRoute
   '/admin/': typeof AuthenticatedAdminIndexRoute
@@ -106,6 +114,7 @@ export interface FileRoutesByTo {
   '/parts/$id': typeof PartsIdRoute
   '/parts': typeof PartsIndexRoute
   '/admin/customers': typeof AuthenticatedAdminCustomersRoute
+  '/admin/products': typeof AuthenticatedAdminProductsRoute
   '/admin/quotations': typeof AuthenticatedAdminQuotationsRoute
   '/admin/settings': typeof AuthenticatedAdminSettingsRoute
   '/admin': typeof AuthenticatedAdminIndexRoute
@@ -121,6 +130,7 @@ export interface FileRoutesById {
   '/parts/$id': typeof PartsIdRoute
   '/parts/': typeof PartsIndexRoute
   '/_authenticated/admin/customers': typeof AuthenticatedAdminCustomersRoute
+  '/_authenticated/admin/products': typeof AuthenticatedAdminProductsRoute
   '/_authenticated/admin/quotations': typeof AuthenticatedAdminQuotationsRoute
   '/_authenticated/admin/settings': typeof AuthenticatedAdminSettingsRoute
   '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
@@ -136,6 +146,7 @@ export interface FileRouteTypes {
     | '/parts/$id'
     | '/parts/'
     | '/admin/customers'
+    | '/admin/products'
     | '/admin/quotations'
     | '/admin/settings'
     | '/admin/'
@@ -148,6 +159,7 @@ export interface FileRouteTypes {
     | '/parts/$id'
     | '/parts'
     | '/admin/customers'
+    | '/admin/products'
     | '/admin/quotations'
     | '/admin/settings'
     | '/admin'
@@ -162,6 +174,7 @@ export interface FileRouteTypes {
     | '/parts/$id'
     | '/parts/'
     | '/_authenticated/admin/customers'
+    | '/_authenticated/admin/products'
     | '/_authenticated/admin/quotations'
     | '/_authenticated/admin/settings'
     | '/_authenticated/admin/'
@@ -249,6 +262,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminCustomersRouteImport
       parentRoute: typeof AuthenticatedAdminRoute
     }
+    '/_authenticated/admin/products': {
+      id: '/_authenticated/admin/products'
+      path: '/products'
+      fullPath: '/admin/products'
+      preLoaderRoute: typeof AuthenticatedAdminProductsRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
     '/_authenticated/admin/quotations': {
       id: '/_authenticated/admin/quotations'
       path: '/quotations'
@@ -268,6 +288,7 @@ declare module '@tanstack/react-router' {
 
 interface AuthenticatedAdminRouteChildren {
   AuthenticatedAdminCustomersRoute: typeof AuthenticatedAdminCustomersRoute
+  AuthenticatedAdminProductsRoute: typeof AuthenticatedAdminProductsRoute
   AuthenticatedAdminQuotationsRoute: typeof AuthenticatedAdminQuotationsRoute
   AuthenticatedAdminSettingsRoute: typeof AuthenticatedAdminSettingsRoute
   AuthenticatedAdminIndexRoute: typeof AuthenticatedAdminIndexRoute
@@ -275,6 +296,7 @@ interface AuthenticatedAdminRouteChildren {
 
 const AuthenticatedAdminRouteChildren: AuthenticatedAdminRouteChildren = {
   AuthenticatedAdminCustomersRoute: AuthenticatedAdminCustomersRoute,
+  AuthenticatedAdminProductsRoute: AuthenticatedAdminProductsRoute,
   AuthenticatedAdminQuotationsRoute: AuthenticatedAdminQuotationsRoute,
   AuthenticatedAdminSettingsRoute: AuthenticatedAdminSettingsRoute,
   AuthenticatedAdminIndexRoute: AuthenticatedAdminIndexRoute,
