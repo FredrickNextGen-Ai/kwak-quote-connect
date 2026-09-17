@@ -26,7 +26,7 @@ function MngLink() {
     <button
       type="button"
       onClick={handleClick}
-      className="font-semibold tracking-widest hover:text-foreground"
+      className="rounded-full border border-border px-3 py-1 font-semibold tracking-widest text-foreground/70 transition-colors hover:border-primary hover:text-primary"
     >
       MNG
     </button>
