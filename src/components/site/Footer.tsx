@@ -5,6 +5,34 @@ import { Logo } from "./Logo";
 import { WhatsAppIcon } from "./WhatsAppButton";
 import { siteConfig, whatsappLink } from "@/lib/site-config";
 
+function MngLink() {
+  const navigate = useNavigate();
+  const [clicks, setClicks] = useState(0);
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const handleClick = () => {
+    if (timer.current) clearTimeout(timer.current);
+    const next = clicks + 1;
+    if (next >= 3) {
+      setClicks(0);
+      navigate({ to: "/auth" });
+      return;
+    }
+    setClicks(next);
+    timer.current = setTimeout(() => setClicks(0), 800);
+  };
+
+  return (
+    <button
+      type="button"
+      onClick={handleClick}
+      className="font-semibold tracking-widest hover:text-foreground"
+    >
+      MNG
+    </button>
+  );
+}
+
 export function Footer() {
   return (
     <footer className="mt-20 border-t border-border bg-surface-strong/60">
