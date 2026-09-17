@@ -1,5 +1,6 @@
-import { Link } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
 import { Clock, Mail, MapPin, Phone } from "lucide-react";
+import { useRef, useState } from "react";
 import { Logo } from "./Logo";
 import { WhatsAppIcon } from "./WhatsAppButton";
 import { siteConfig, whatsappLink } from "@/lib/site-config";
