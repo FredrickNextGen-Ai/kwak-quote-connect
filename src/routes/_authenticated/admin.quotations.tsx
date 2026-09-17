@@ -35,7 +35,9 @@ function QuotationsPage() {
 
   async function handlePdf(id: string, number: string) {
     try {
-      await downloadQuotationPdf(id, number);
+      const { data } = await supabase.auth.getSession();
+      const blob = await generateQuotationPdf(id, data.session?.access_token);
+      downloadBlob(blob, `${number}.pdf`);
     } catch (e) {
       toast.error("PDF not available yet", { description: (e as Error).message });
     }
