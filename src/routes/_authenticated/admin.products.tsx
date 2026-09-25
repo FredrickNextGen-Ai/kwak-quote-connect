@@ -1,12 +1,20 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { toast } from "sonner";
-import { Plus, Pencil, Trash2 } from "lucide-react";
+import {
+  Plus,
+  Pencil,
+  Trash2,
+  Upload,
+  Image as ImageIcon,
+  X,
+} from "lucide-react";
 import { adminProductsQuery, deleteProduct, upsertProduct } from "@/lib/admin";
 import { categoriesQuery, type Product } from "@/lib/catalog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { uploadProductImage } from "@/lib/product-images";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -67,7 +75,7 @@ const EMPTY: Draft = {
   condition: "New",
   availability: "Available",
   price: "",
-  image: IMAGES[0]!,
+  image: "",
   description: "",
   featured: false,
 };
@@ -83,7 +91,7 @@ function toDraft(p: Product): Draft {
     condition: p.condition,
     availability: p.availability,
     price: p.price === null ? "" : String(p.price),
-    image: p.image ?? IMAGES[0]!,
+    image: p.image ?? "",
     description: p.description ?? "",
     featured: p.featured,
   };
@@ -95,6 +103,32 @@ function ProductsPage() {
   const categories = useQuery(categoriesQuery);
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState<Draft>(EMPTY);
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  async function handleImageUpload(file: File) {
+    try {
+      setUploadingImage(true);
+
+      const imageUrl = await uploadProductImage(file);
+
+      setDraft((current) => ({
+        ...current,
+        image: imageUrl,
+      }));
+
+      toast.success("Image uploaded successfully");
+    } catch (error) {
+      toast.error("Image upload failed", {
+        description:
+          error instanceof Error
+            ? error.message
+            : "Could not upload image.",
+      });
+    } finally {
+      setUploadingImage(false);
+    }
+  }
 
   const save = useMutation({
     mutationFn: (d: Draft) =>
@@ -297,22 +331,83 @@ function ProductsPage() {
               </div>
             </div>
 
-            <div className="space-y-1.5">
-              <Label>Photo</Label>
-              <div className="flex flex-wrap gap-2">
-                {IMAGES.map((src) => (
-                  <button
-                    key={src}
+            <div className="space-y-3">
+              <Label>Product image</Label>
+
+              <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-4">
+                <div className="flex flex-col items-center justify-center gap-3 text-center">
+                  {draft.image ? (
+                    <div className="relative">
+                      <img
+                        src={draft.image}
+                        alt="Product preview"
+                        className="h-40 w-40 rounded-xl object-cover shadow-sm"
+                      />
+
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setDraft((current) => ({
+                            ...current,
+                            image: "",
+                          }))
+                        }
+                        className="absolute -right-2 -top-2 flex size-7 items-center justify-center rounded-full bg-white shadow-md"
+                        aria-label="Remove image"
+                      >
+                        <X className="size-4" />
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="flex size-40 items-center justify-center rounded-xl bg-slate-100">
+                      <ImageIcon className="size-10 text-slate-400" />
+                    </div>
+                  )}
+
+                  <div>
+                    <p className="text-sm font-medium">
+                      {draft.image
+                        ? "Change product image"
+                        : "Upload product image"}
+                    </p>
+
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      JPG, PNG or WEBP · Maximum 5 MB
+                    </p>
+                  </div>
+
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                    className="hidden"
+                    onChange={(event) => {
+                      const file = event.target.files?.[0];
+
+                      if (file) {
+                        handleImageUpload(file);
+                      }
+
+                      event.target.value = "";
+                    }}
+                  />
+
+                  <Button
                     type="button"
-                    onClick={() => setDraft({ ...draft, image: src })}
-                    className={
-                      "size-14 overflow-hidden rounded-lg border-2 " +
-                      (draft.image === src ? "border-primary" : "border-transparent")
-                    }
+                    variant="outline"
+                    className="rounded-full"
+                    disabled={uploadingImage}
+                    onClick={() => fileInputRef.current?.click()}
                   >
-                    <img src={src} alt="" className="size-full object-cover" />
-                  </button>
-                ))}
+                    <Upload className="size-4" />
+
+                    {uploadingImage
+                      ? "Uploading..."
+                      : draft.image
+                        ? "Change image"
+                        : "Choose image"}
+                  </Button>
+                </div>
               </div>
             </div>
 

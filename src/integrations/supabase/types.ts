@@ -11,7 +11,7 @@ export type Database = {
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
     PostgrestVersion: "14.5"
-  }
+  } 
   public: {
     Tables: {
       categories: {

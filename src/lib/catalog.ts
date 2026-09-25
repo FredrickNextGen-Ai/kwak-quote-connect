@@ -31,16 +31,35 @@ export type Product = {
   updated_at: string;
 };
 
-async function unwrap<T>(promise: PromiseLike<{ data: T | null; error: { message: string } | null }>) {
+export type QuotationSubmissionResult = {
+  id: string;
+  quotation_number: string;
+};
+
+async function unwrap<T>(
+  promise: PromiseLike<{
+    data: T | null;
+    error: { message: string } | null;
+  }>,
+) {
   const { data, error } = await promise;
-  if (error) throw new Error(error.message);
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
   return (data ?? []) as T;
 }
 
 export const categoriesQuery = queryOptions({
   queryKey: ["categories"],
   queryFn: () =>
-    unwrap<Category[]>(supabase.from("categories").select("*").order("sort_order") as never),
+    unwrap<Category[]>(
+      supabase
+        .from("categories")
+        .select("*")
+        .order("sort_order") as never,
+    ),
   staleTime: 5 * 60 * 1000,
 });
 
@@ -48,7 +67,10 @@ export const productsQuery = queryOptions({
   queryKey: ["products"],
   queryFn: () =>
     unwrap<Product[]>(
-      supabase.from("products").select("*").order("created_at", { ascending: false }) as never,
+      supabase
+        .from("products")
+        .select("*")
+        .order("created_at", { ascending: false }) as never,
     ),
   staleTime: 60 * 1000,
 });
@@ -71,8 +93,16 @@ export function productQuery(id: string) {
   return queryOptions({
     queryKey: ["product", id],
     queryFn: async () => {
-      const { data, error } = await supabase.from("products").select("*").eq("id", id).maybeSingle();
-      if (error) throw new Error(error.message);
+      const { data, error } = await supabase
+        .from("products")
+        .select("*")
+        .eq("id", id)
+        .maybeSingle();
+
+      if (error) {
+        throw new Error(error.message);
+      }
+
       return (data as Product | null) ?? null;
     },
   });
@@ -86,8 +116,11 @@ export async function submitQuotation(input: {
   vehicleModel: string;
   vehicleYear: string;
   message: string;
-  items: { product_id: string; quantity: number }[];
-}) {
+  items: {
+    product_id: string;
+    quantity: number;
+  }[];
+}): Promise<QuotationSubmissionResult> {
   const { data, error } = await supabase.rpc("submit_quotation", {
     _full_name: input.fullName,
     _phone: input.phone,
@@ -98,6 +131,20 @@ export async function submitQuotation(input: {
     _message: input.message,
     _items: input.items,
   } as never);
-  if (error) throw new Error(error.message);
-  return data as unknown as string;
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  if (!data) {
+    throw new Error("Quotation submission returned no data.");
+  }
+
+  const result = data as unknown as QuotationSubmissionResult;
+
+  if (!result.id || !result.quotation_number) {
+    throw new Error("Invalid quotation response from the server.");
+  }
+
+  return result;
 }

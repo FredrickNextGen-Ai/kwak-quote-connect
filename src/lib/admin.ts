@@ -69,10 +69,47 @@ export const adminProductsQuery = queryOptions({
 });
 
 export async function updateQuotationStatus(id: string, status: string) {
-  const { error } = await supabase.from("quotations").update({ status } as never).eq("id", id);
-  if (error) throw new Error(error.message);
+  const { data, error } = await supabase.rpc(
+    "update_quotation_status",
+    {
+      _quotation_id: id,
+      _status: status,
+    } as never,
+  );
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  if (!data) {
+    throw new Error("Quotation status update returned no data.");
+  }
+
+  return data;
 }
 
+export async function updateQuotation(
+  id: string,
+  input: {
+    status?: string;
+    admin_notes?: string | null;
+    discount?: number;
+  },
+) {
+  const payload = {
+    ...input,
+    updated_at: new Date().toISOString(),
+  };
+
+  const { error } = await supabase
+    .from("quotations")
+    .update(payload as never)
+    .eq("id", id);
+
+  if (error) {
+    throw new Error(error.message);
+  }
+}
 export async function deleteProduct(id: string) {
   const { error } = await supabase.from("products").delete().eq("id", id);
   if (error) throw new Error(error.message);
