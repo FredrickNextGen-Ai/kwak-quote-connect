@@ -1,6 +1,10 @@
 import { queryOptions } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import type { Product } from "./catalog";
+import type { Category, Product } from "./catalog";
+
+type AdminProduct = Product & {
+  categories: Pick<Category, "name"> | null;
+};
 
 export type Customer = {
   id: string;
@@ -63,8 +67,11 @@ export const adminCustomersQuery = queryOptions({
 export const adminProductsQuery = queryOptions({
   queryKey: ["admin", "products"],
   queryFn: () =>
-    unwrap<Product[]>(
-      supabase.from("products").select("*").order("created_at", { ascending: false }) as never,
+    unwrap<AdminProduct[]>(
+      supabase
+        .from("products")
+        .select("*, categories(name)")
+        .order("created_at", { ascending: false }) as never,
     ),
 });
 
