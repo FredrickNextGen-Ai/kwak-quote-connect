@@ -1,7 +1,7 @@
 import json
 import os
 import time
-from datetime import datetime, timezone
+from datetime import datetime
 
 import requests
 
@@ -43,15 +43,9 @@ STATE_FILE = os.path.join(
 
 
 def load_notification_state():
-    """
-    Load the last quotation notification state.
-
-    The state is stored locally so that the bot does not
-    repeatedly notify the same quotation after a normal
-    restart.
-    """
 
     if not os.path.exists(STATE_FILE):
+
         return {
             "last_created_at": None,
             "last_quotation_id": None,
@@ -138,6 +132,7 @@ def send_message(
     }
 
     if reply_markup:
+
         payload["reply_markup"] = reply_markup
 
     response = requests.post(
@@ -167,6 +162,7 @@ def edit_message(
     }
 
     if reply_markup:
+
         payload["reply_markup"] = reply_markup
 
     response = requests.post(
@@ -255,6 +251,7 @@ def get_updates(
     }
 
     if offset is not None:
+
         params["offset"] = offset
 
     response = requests.get(
@@ -268,6 +265,7 @@ def get_updates(
     data = response.json()
 
     if not data.get("ok"):
+
         return []
 
     return data.get(
@@ -292,6 +290,7 @@ def format_date(
 ) -> str:
 
     if not value:
+
         return "Date unavailable"
 
     try:
@@ -313,7 +312,7 @@ def format_date(
 
 
 # =========================================================
-# QUOTATION VALUE
+# QUOTATION ITEM COUNT
 # =========================================================
 
 def get_quotation_item_count(
@@ -396,6 +395,7 @@ def format_new_quotation_notification(
     )
 
     if not vehicle:
+
         vehicle = "Vehicle not specified"
 
     item_count = get_quotation_item_count(
@@ -412,13 +412,18 @@ def format_new_quotation_notification(
         )
     )
 
-    action_message = (
-        "⚠️ Action required — "
-        "quotation awaiting review."
-        if status.lower() == "pending"
-        else
-        "Please review the quotation."
-    )
+    if status.lower() == "pending":
+
+        action_message = (
+            "⚠️ Action required — "
+            "quotation awaiting review."
+        )
+
+    else:
+
+        action_message = (
+            "Please review the quotation."
+        )
 
     return (
         "🔔 NEW QUOTATION\n\n"
@@ -436,7 +441,7 @@ def format_new_quotation_notification(
 
 
 # =========================================================
-# FIND NEW QUOTATIONS
+# FIND RECENT QUOTATIONS
 # =========================================================
 
 def fetch_recent_quotations():
@@ -463,10 +468,6 @@ def check_for_new_quotations():
 
             return
 
-        # -------------------------------------------------
-        # Sort newest first
-        # -------------------------------------------------
-
         quotations = sorted(
             quotations,
             key=lambda quotation: (
@@ -490,9 +491,6 @@ def check_for_new_quotations():
 
         # -------------------------------------------------
         # FIRST RUN
-        #
-        # If no state exists, establish a baseline
-        # without sending old quotations as notifications.
         # -------------------------------------------------
 
         if (
@@ -527,9 +525,9 @@ def check_for_new_quotations():
             "last_quotation_id"
         )
 
-        # -------------------------------------------------
-        # FIND QUOTATIONS NEWER THAN LAST CHECK
-        # -------------------------------------------------
+        if not last_created_at:
+
+            return
 
         new_quotations = []
 
@@ -547,7 +545,6 @@ def check_for_new_quotations():
 
                 continue
 
-            # Primary comparison: created_at
             if quotation_created_at > last_created_at:
 
                 new_quotations.append(
@@ -556,8 +553,6 @@ def check_for_new_quotations():
 
                 continue
 
-            # Same timestamp: use ID to avoid
-            # accidentally ignoring another record.
             if (
                 quotation_created_at
                 == last_created_at
@@ -570,13 +565,6 @@ def check_for_new_quotations():
                     quotation
                 )
 
-        # -------------------------------------------------
-        # OLDEST FIRST
-        #
-        # If multiple quotations arrived while the bot
-        # was busy, notify them in chronological order.
-        # -------------------------------------------------
-
         new_quotations.sort(
             key=lambda quotation: (
                 quotation.get(
@@ -587,7 +575,7 @@ def check_for_new_quotations():
         )
 
         # -------------------------------------------------
-        # SEND NOTIFICATIONS
+        # SEND LIVE NOTIFICATIONS ONLY TO MANAGER
         # -------------------------------------------------
 
         for quotation in new_quotations:
@@ -618,8 +606,6 @@ def check_for_new_quotations():
                 message,
             )
 
-            # Save state only after successful Telegram
-            # delivery so a failed message can be retried.
             save_notification_state(
                 quotation_created_at,
                 quotation_id,
@@ -857,6 +843,7 @@ def format_quotations(
         )
 
         if not vehicle:
+
             vehicle = "Vehicle not specified"
 
         value = quotation_value(
@@ -1044,16 +1031,6 @@ def handle_callback(
         message["chat"]["id"]
     )
 
-    if str(chat_id) != str(
-        TELEGRAM_CHAT_ID
-    ):
-
-        answer_callback(
-            callback_id
-        )
-
-        return
-
     data = callback_query.get(
         "data",
         "",
@@ -1211,20 +1188,6 @@ def handle_message(
     text: str,
 ):
 
-    if str(chat_id) != str(
-        TELEGRAM_CHAT_ID
-    ):
-
-        send_message(
-            chat_id,
-            (
-                "You are not authorized "
-                "to use this bot."
-            ),
-        )
-
-        return
-
     command = text.strip().lower()
 
     # -----------------------------------------------------
@@ -1375,7 +1338,7 @@ def run_bot():
     )
 
     # -----------------------------------------------------
-    # Initialize notification baseline
+    # INITIAL NOTIFICATION CHECK
     # -----------------------------------------------------
 
     try:
@@ -1396,13 +1359,14 @@ def run_bot():
         try:
 
             # -------------------------------------------------
-            # LIVE QUOTATION CHECK
-            #
-            # This runs continuously alongside Telegram
-            # message polling.
+            # CHECK LIVE QUOTATIONS
             # -------------------------------------------------
 
             check_for_new_quotations()
+
+            # -------------------------------------------------
+            # TELEGRAM UPDATES
+            # -------------------------------------------------
 
             updates = get_updates(
                 offset
