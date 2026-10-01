@@ -1,4 +1,7 @@
+import json
+import os
 import time
+from datetime import datetime, timezone
 
 import requests
 
@@ -30,6 +33,96 @@ quotation_filters = {}
 
 
 # =========================================================
+# LIVE NOTIFICATION STATE
+# =========================================================
+
+STATE_FILE = os.path.join(
+    os.path.dirname(__file__),
+    "telegram_state.json",
+)
+
+
+def load_notification_state():
+    """
+    Load the last quotation notification state.
+
+    The state is stored locally so that the bot does not
+    repeatedly notify the same quotation after a normal
+    restart.
+    """
+
+    if not os.path.exists(STATE_FILE):
+        return {
+            "last_created_at": None,
+            "last_quotation_id": None,
+        }
+
+    try:
+
+        with open(
+            STATE_FILE,
+            "r",
+            encoding="utf-8",
+        ) as file:
+
+            data = json.load(file)
+
+        return {
+            "last_created_at": data.get(
+                "last_created_at"
+            ),
+            "last_quotation_id": data.get(
+                "last_quotation_id"
+            ),
+        }
+
+    except Exception as error:
+
+        print(
+            f"Could not load Telegram state: {error}"
+        )
+
+        return {
+            "last_created_at": None,
+            "last_quotation_id": None,
+        }
+
+
+def save_notification_state(
+    created_at: str | None,
+    quotation_id: str | None,
+):
+
+    state = {
+        "last_created_at": created_at,
+        "last_quotation_id": quotation_id,
+    }
+
+    try:
+
+        with open(
+            STATE_FILE,
+            "w",
+            encoding="utf-8",
+        ) as file:
+
+            json.dump(
+                state,
+                file,
+                indent=2,
+            )
+
+    except Exception as error:
+
+        print(
+            f"Could not save Telegram state: {error}"
+        )
+
+
+notification_state = load_notification_state()
+
+
+# =========================================================
 # SEND MESSAGE
 # =========================================================
 
@@ -38,6 +131,7 @@ def send_message(
     text: str,
     reply_markup: dict | None = None,
 ):
+
     payload = {
         "chat_id": chat_id,
         "text": text,
@@ -65,6 +159,7 @@ def edit_message(
     text: str,
     reply_markup: dict | None = None,
 ):
+
     payload = {
         "chat_id": chat_id,
         "message_id": message_id,
@@ -93,6 +188,7 @@ def send_pdf(
     filename: str,
     caption: str,
 ):
+
     pdf_buffer.seek(0)
 
     response = requests.post(
@@ -116,6 +212,7 @@ def send_pdf(
     data = response.json()
 
     if not data.get("ok"):
+
         raise RuntimeError(
             data.get(
                 "description",
@@ -133,6 +230,7 @@ def send_pdf(
 def answer_callback(
     callback_query_id: str,
 ):
+
     response = requests.post(
         f"{TELEGRAM_API}/answerCallbackQuery",
         json={
@@ -151,6 +249,7 @@ def answer_callback(
 def get_updates(
     offset=None,
 ):
+
     params = {
         "timeout": 30,
     }
@@ -184,17 +283,18 @@ def get_updates(
 def format_currency(
     value: float,
 ) -> str:
+
     return f"KES {value:,.2f}"
 
 
 def format_date(
     value: str | None,
 ) -> str:
+
     if not value:
         return "Date unavailable"
 
     try:
-        from datetime import datetime
 
         parsed = datetime.fromisoformat(
             value.replace(
@@ -208,7 +308,333 @@ def format_date(
         )
 
     except ValueError:
+
         return str(value)
+
+
+# =========================================================
+# QUOTATION VALUE
+# =========================================================
+
+def get_quotation_item_count(
+    quotation: dict,
+) -> int:
+
+    items = quotation.get(
+        "quotation_items"
+    )
+
+    if not isinstance(
+        items,
+        list,
+    ):
+
+        return 0
+
+    return len(items)
+
+
+# =========================================================
+# LIVE QUOTATION MESSAGE
+# =========================================================
+
+def format_new_quotation_notification(
+    quotation: dict,
+) -> str:
+
+    quotation_number = (
+        quotation.get(
+            "quotation_number"
+        )
+        or "N/A"
+    )
+
+    status = (
+        quotation.get(
+            "status"
+        )
+        or "Unknown"
+    )
+
+    customer = (
+        quotation.get(
+            "customers"
+        )
+        or {}
+    )
+
+    customer_name = (
+        customer.get(
+            "full_name"
+        )
+        or "Unknown customer"
+    )
+
+    phone = (
+        customer.get(
+            "phone"
+        )
+        or "No phone"
+    )
+
+    vehicle_parts = [
+        quotation.get(
+            "vehicle_make"
+        ),
+        quotation.get(
+            "vehicle_model"
+        ),
+        quotation.get(
+            "vehicle_year"
+        ),
+    ]
+
+    vehicle = " ".join(
+        str(part)
+        for part in vehicle_parts
+        if part
+    )
+
+    if not vehicle:
+        vehicle = "Vehicle not specified"
+
+    item_count = get_quotation_item_count(
+        quotation
+    )
+
+    value = quotation_value(
+        quotation
+    )
+
+    created_at = format_date(
+        quotation.get(
+            "created_at"
+        )
+    )
+
+    action_message = (
+        "⚠️ Action required — "
+        "quotation awaiting review."
+        if status.lower() == "pending"
+        else
+        "Please review the quotation."
+    )
+
+    return (
+        "🔔 NEW QUOTATION\n\n"
+        f"Quotation: {quotation_number}\n"
+        f"Customer: {customer_name}\n"
+        f"Phone: {phone}\n"
+        f"Vehicle: {vehicle}\n"
+        f"Items: {item_count}\n"
+        f"Value: {format_currency(value)}\n"
+        f"Status: {status}\n\n"
+        f"Received: {created_at}\n\n"
+        f"{action_message}\n\n"
+        "Use /quotations to review."
+    )
+
+
+# =========================================================
+# FIND NEW QUOTATIONS
+# =========================================================
+
+def fetch_recent_quotations():
+
+    return fetch_quotations_filtered(
+        date_filter="all",
+        status_filter="All",
+    )
+
+
+# =========================================================
+# CHECK LIVE QUOTATIONS
+# =========================================================
+
+def check_for_new_quotations():
+
+    global notification_state
+
+    try:
+
+        quotations = fetch_recent_quotations()
+
+        if not quotations:
+
+            return
+
+        # -------------------------------------------------
+        # Sort newest first
+        # -------------------------------------------------
+
+        quotations = sorted(
+            quotations,
+            key=lambda quotation: (
+                quotation.get(
+                    "created_at"
+                )
+                or ""
+            ),
+            reverse=True,
+        )
+
+        newest = quotations[0]
+
+        newest_created_at = newest.get(
+            "created_at"
+        )
+
+        newest_id = newest.get(
+            "id"
+        )
+
+        # -------------------------------------------------
+        # FIRST RUN
+        #
+        # If no state exists, establish a baseline
+        # without sending old quotations as notifications.
+        # -------------------------------------------------
+
+        if (
+            notification_state.get(
+                "last_created_at"
+            )
+            is None
+        ):
+
+            save_notification_state(
+                newest_created_at,
+                newest_id,
+            )
+
+            notification_state = {
+                "last_created_at": newest_created_at,
+                "last_quotation_id": newest_id,
+            }
+
+            print(
+                "Telegram notification baseline "
+                "initialized."
+            )
+
+            return
+
+        last_created_at = notification_state.get(
+            "last_created_at"
+        )
+
+        last_quotation_id = notification_state.get(
+            "last_quotation_id"
+        )
+
+        # -------------------------------------------------
+        # FIND QUOTATIONS NEWER THAN LAST CHECK
+        # -------------------------------------------------
+
+        new_quotations = []
+
+        for quotation in quotations:
+
+            quotation_created_at = quotation.get(
+                "created_at"
+            )
+
+            quotation_id = quotation.get(
+                "id"
+            )
+
+            if not quotation_created_at:
+
+                continue
+
+            # Primary comparison: created_at
+            if quotation_created_at > last_created_at:
+
+                new_quotations.append(
+                    quotation
+                )
+
+                continue
+
+            # Same timestamp: use ID to avoid
+            # accidentally ignoring another record.
+            if (
+                quotation_created_at
+                == last_created_at
+                and quotation_id
+                and quotation_id
+                != last_quotation_id
+            ):
+
+                new_quotations.append(
+                    quotation
+                )
+
+        # -------------------------------------------------
+        # OLDEST FIRST
+        #
+        # If multiple quotations arrived while the bot
+        # was busy, notify them in chronological order.
+        # -------------------------------------------------
+
+        new_quotations.sort(
+            key=lambda quotation: (
+                quotation.get(
+                    "created_at"
+                )
+                or ""
+            )
+        )
+
+        # -------------------------------------------------
+        # SEND NOTIFICATIONS
+        # -------------------------------------------------
+
+        for quotation in new_quotations:
+
+            quotation_id = quotation.get(
+                "id"
+            )
+
+            quotation_created_at = quotation.get(
+                "created_at"
+            )
+
+            if not quotation_id:
+
+                continue
+
+            message = format_new_quotation_notification(
+                quotation
+            )
+
+            print(
+                "New quotation detected: "
+                f"{quotation.get('quotation_number', 'N/A')}"
+            )
+
+            send_message(
+                str(TELEGRAM_CHAT_ID),
+                message,
+            )
+
+            # Save state only after successful Telegram
+            # delivery so a failed message can be retried.
+            save_notification_state(
+                quotation_created_at,
+                quotation_id,
+            )
+
+            notification_state = {
+                "last_created_at": quotation_created_at,
+                "last_quotation_id": quotation_id,
+            }
+
+    except Exception as error:
+
+        print(
+            f"Live quotation notification error: {error}"
+        )
 
 
 # =========================================================
@@ -218,6 +644,7 @@ def format_date(
 def get_period_label(
     date_filter: str,
 ) -> str:
+
     labels = {
         "all": "All Dates",
         "today": "Today",
@@ -328,6 +755,7 @@ def load_quotations(
     date_filter: str = "all",
     status_filter: str = "All",
 ):
+
     return fetch_quotations_filtered(
         date_filter=date_filter,
         status_filter=status_filter,
@@ -345,6 +773,7 @@ def format_quotations(
 ):
 
     if not quotations:
+
         return (
             "KWAK AUTO SPARE\n\n"
             "QUOTATIONS\n\n"
@@ -945,11 +1374,35 @@ def run_bot():
         "KWAK AUTO SPARE Telegram bot started..."
     )
 
+    # -----------------------------------------------------
+    # Initialize notification baseline
+    # -----------------------------------------------------
+
+    try:
+
+        check_for_new_quotations()
+
+    except Exception as error:
+
+        print(
+            "Initial quotation notification "
+            f"check failed: {error}"
+        )
+
     offset = None
 
     while True:
 
         try:
+
+            # -------------------------------------------------
+            # LIVE QUOTATION CHECK
+            #
+            # This runs continuously alongside Telegram
+            # message polling.
+            # -------------------------------------------------
+
+            check_for_new_quotations()
 
             updates = get_updates(
                 offset
@@ -1027,4 +1480,5 @@ def run_bot():
 # =========================================================
 
 if __name__ == "__main__":
+
     run_bot()
